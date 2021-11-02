@@ -3,11 +3,7 @@ import time
 import keyboard
 import os
 VERBOSE = False
-# 0x000 to 0xFFF
-# 0x000 to 0x1FF cant be used by programs
-# 0xF00 to 0xFFF display refresh
-# 0xEA0 to 0xEFF stack, variables, internal
-# Most programs start at 0x200 [512] but some 0x600 [1536]
+
 SCREEN_WIDTH = 64
 SCREEN_HEIGHT = 32
 
@@ -17,31 +13,18 @@ MEMORY = [None] * 4096
 for i in range(4096):
     MEMORY[i] = 0
 
-# 16 Vx registers 8bits each
-# 0x0 to 0xF, 0xF should not be used by programs
-
 V_REG = [0] * 16
-# Ix regster 16 bits each
-# Usually the 12 most rightmost bits are used
 I_REG = 0
 
-# Decrement 60Hz/s
 TIMER = 0
 SOUND = 0
 
-# Program counter 16 bit
 PC = 0
-# Stack pointer 8 bit, upmost of stack
 SP = 0xEFF
-# STACK is 16x16-bit
 
-# Display
 DISPLAY = []
 
-# All_keys
-
 AVAILABLE_KEYS = list(range(0x30, 0x3A)) + list(range(0x41, 0x47))
-# Keyboard_map
 KEYBOARD_MAP = {
     0x31: '1', 0x32: '2', 0x33: '3', 0x43: '4',
     0x34: 'Q', 0x35: 'W', 0x36: 'E', 0x44: 'R',
@@ -53,7 +36,6 @@ KEYBOARD_MAP = {
     0xD: 'Z', 0xE: 'X', 0xF: 'C', 0x10: 'V'
 }
 
-# Number sprites
 NUMBER_SPRITES = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                   0x20, 0x60, 0x20, 0x20, 0x70,  # 1
                   0xF0, 0x10, 0xF0, 0x80, 0xF0,  # 2
