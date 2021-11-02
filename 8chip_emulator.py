@@ -41,7 +41,6 @@ DISPLAY = []
 # All_keys
 
 AVAILABLE_KEYS = list(range(0x30, 0x3A)) + list(range(0x41, 0x47))
-print(AVAILABLE_KEYS)
 # Keyboard_map
 KEYBOARD_MAP = {
     0x31: '1', 0x32: '2', 0x33: '3', 0x43: '4',
@@ -82,23 +81,27 @@ for x_screen in range(SCREEN_WIDTH):
 
 
 def show_display(display):
-    print(".", end="")
+    display_buffer = ""
+    display_buffer += "."
     for x in range(SCREEN_WIDTH):
-        print("_", end="")
-    print()
+        display_buffer += '_'
+    display_buffer += '\n'
     for y in range(SCREEN_HEIGHT):
-        print('|', end="")
+        display_buffer += '|'
         for x in range(SCREEN_WIDTH):
             if DISPLAY[x][y] == 1:
-                print("▓", end="")
+                display_buffer += '▓'
             else:
-                print(" ", end="")
+                display_buffer += ' '
 
-        print()
+        display_buffer += '\n'
+
+    clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
+    clearConsole()
+    print(display_buffer)
 
 
 def display_clear():
-    print("CLEAR")
     for x in range(SCREEN_WIDTH):
         for y in range(SCREEN_HEIGHT):
             DISPLAY[x][y] = 0
@@ -334,7 +337,6 @@ def DRW(x, y, n):
     global V_REG
     erased = 0
     for i in range(n):
-        print(I_REG)
         sprite_line = MEMORY[I_REG + i]
         for j in range(8):
             DISPLAY[(V_REG[x] + j) % SCREEN_WIDTH][(V_REG[y] + i) % SCREEN_HEIGHT]
@@ -417,7 +419,7 @@ def ADDIR(x):
     global V_REG
     global I_REG
 
-    I_REG = (I_REG + V_REG[x]) & 0xFF
+    I_REG = I_REG + V_REG[x]
 
 
 # LD Fx29
@@ -468,9 +470,6 @@ def LDRM(x):
 def print_mem(start, end):
     for address in range(start, end):
         print("ADDRESS {}: {} {}".format(hex(address), hex(MEMORY[address]), dec_to_bin(MEMORY[address])))
-
-
-print_mem(0, 0x4)
 
 
 def read_pc():
@@ -568,9 +567,9 @@ def interpret_command(b0, b1, b2, b3):
     elif b0 == 0xF and b2 == 0x6 and b3 == 0x5:
         LDRM(x)
     else:
-        # print("UNKNOWN")
-        # print("{} {} {} {} ".format(hex(b0), hex(b1), hex(b2),hex(b3)))
-        # input("")
+        print("UNKNOWN")
+        print("{} {} {} {} ".format(hex(b0), hex(b1), hex(b2),hex(b3)))
+        input("")
 
 
 def load_rom(filename):
@@ -591,5 +590,5 @@ while True:
         TIMER -= 1
     if SOUND > 0:
         SOUND -= 1
-    time.sleep(0.008)
+    time.sleep(0.002)
     read_pc()
