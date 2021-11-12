@@ -276,7 +276,7 @@ class Chip8:
                     erased = 0x1
                 self.DISPLAY[(self.V_REG[x] + j) % SCREEN_WIDTH][(self.V_REG[y] + i) % SCREEN_HEIGHT] = new_pixel
         self.V_REG[0xF] = erased
-        self.show_display()
+#        self.show_display()    Remove comment to play from console
 
     # SKP Ex9E
     def SKP(self, x):
@@ -478,7 +478,7 @@ class Chip8:
         self.read_pc()
 
 
-emu = Chip8()
-emu.load_rom("pong.ch8")
-while True:
-    emu.tick()
+# emu = Chip8()             Remove to play from console
+# emu.load_rom("pong.ch8")
+# while True:
+#     emu.tick()
