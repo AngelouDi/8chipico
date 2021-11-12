@@ -26,7 +26,7 @@ emu = chippico8.Chip8()
 emu.load_rom("pong.ch8")
 while not done:
     clock.tick(480)
-    emu.update_keys()
+    # emu.update_keys()
     emu.tick()
     for event in pygame.event.get(): # User did something
         if event.type == pygame.QUIT: # If user clicked close

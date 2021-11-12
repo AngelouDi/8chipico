@@ -1,5 +1,6 @@
 import socket
 import keyboard
+import pygame
 
 keys = [
     '1', '2', '3', '4',
@@ -7,36 +8,110 @@ keys = [
     'A', 'S', 'D', 'F',
     'Z', 'X', 'C', 'V']
 
+SCREEN_WIDTH = 64
+SCREEN_HEIGHT = 32
+SCREEN_MULTIPLIER = 12
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+size = [SCREEN_WIDTH*SCREEN_MULTIPLIER, SCREEN_HEIGHT*SCREEN_MULTIPLIER]
+screen = pygame.display.set_mode(size)
+clock = pygame.time.Clock()
+
 
 def check_keys():
-    pressed_keys = b''
+    pressed_keys = b' '
 
     for key in keys:
         if keyboard.is_pressed(key):
             pressed_keys += str.encode(key)
     return pressed_keys
 
+def show_display(DISPLAY):
+    for y in range(SCREEN_HEIGHT):
+        for x in range(SCREEN_WIDTH):
+            if DISPLAY[x][y] == 1:
+                pygame.draw.rect(screen, WHITE, [x*SCREEN_MULTIPLIER, y*SCREEN_MULTIPLIER, 1*SCREEN_MULTIPLIER, 1*SCREEN_MULTIPLIER])
 
-ClientMultiSocket = socket.socket()
-host = '127.0.0.1'
-port = 2004
+def decode_display_data(display_data):
+    DISPLAY = []
+    for x_screen in range(SCREEN_WIDTH):
+        new_column = []
+        for y_screen in range(SCREEN_HEIGHT):
+            new_column.append(0)
+        DISPLAY.append(new_column)
+    iter = 0
+    for y in range(SCREEN_HEIGHT):
+        for x in range(SCREEN_WIDTH):
+            DISPLAY[x][y] = ((display_data >> (2048-iter)) & 1)
+            iter += 1
+    # show_display(DISPLAY)
 
-print('Waiting for connection response')
-
-try:
-    ClientMultiSocket.connect((host, port))
-except socket.error as e:
-    print(str(e))
-
-res = ClientMultiSocket.recv(1024)
-print(res.decode('utf-8'))
+    return DISPLAY
 
 
-while True:
-    res = ClientMultiSocket.recv(2048)
-    if res:
-        res = int.from_bytes(res, 'little')
-        if res == 0xFF:
-            ClientMultiSocket.send(check_keys())
 
-ClientMultiSocket.close()
+
+class Client:
+
+    def __init__(self):
+        self.ClientMultiSocket = None
+        self.DISPLAY = []
+        self.res = None
+        self.initialize_connection()
+        self.initialize_display()
+
+    def initialize_connection(self):
+        self.ClientMultiSocket = socket.socket()
+        host = '127.0.0.1'
+        port = 2004
+
+        print('Waiting for connection response')
+
+        try:
+            self.ClientMultiSocket.connect((host, port))
+        except socket.error as e:
+            print(str(e))
+
+        self.res = self.ClientMultiSocket.recv(1024)
+        print(self.res.decode('utf-8'))
+
+    def initialize_display(self):
+        for x_screen in range(SCREEN_WIDTH):
+            new_column = []
+            for y_screen in range(SCREEN_HEIGHT):
+                new_column.append(0)
+            self.DISPLAY.append(new_column)
+
+    def game_loop(self):
+
+
+        pygame.init()
+        for event in pygame.event.get():  # User did something
+            if event.type == pygame.QUIT:  # If user clicked close
+                done = True  # Flag that we are done so we exit this loop
+
+
+        done = False
+
+        while not done:
+            res = self.ClientMultiSocket.recv(2048)
+            if res:
+                res = int.from_bytes(res, 'little')
+                if res == 0xFF:
+                    self.ClientMultiSocket.send(check_keys())
+                else:
+                    clock.tick(480)
+                    for event in pygame.event.get():  # User did something
+                        if event.type == pygame.QUIT:  # If user clicked close
+                            done = True  # Flag that we are done so we exit this loop
+                    screen.fill(BLACK)
+                    DISPLAY = decode_display_data(res)
+                    show_display(DISPLAY)
+                    pygame.display.flip()
+
+
+        # self.ClientMultiSocket.close()
+
+
+client = Client()
+client.game_loop()

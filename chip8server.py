@@ -1,7 +1,11 @@
 import socket
+from chippico8 import Chip8
 import os
-from _thread import *
+import threading
 import time
+
+SCREEN_WIDTH = 64
+SCREEN_HEIGHT = 32
 
 def multi_threaded_client(connection):
     connection.send(str.encode('Server is working:'))
@@ -14,54 +18,114 @@ def multi_threaded_client(connection):
     connection.close()
 
 
-ServerSideSocket = socket.socket()
-host = '127.0.0.1'
-port = 2004
-ThreadCount = 0
+def show_display_terminal(DISPLAY):
+    display_buffer = ""
+    display_buffer += "."
+    for x in range(SCREEN_WIDTH):
+        display_buffer += '_'
+    display_buffer += '\n'
+    for y in range(SCREEN_HEIGHT):
+        display_buffer += '|'
+        for x in range(SCREEN_WIDTH):
+            if DISPLAY[x][y] == 1:
+                display_buffer += '▓'
+            else:
+                display_buffer += ' '
 
-try:
-    ServerSideSocket.bind((host, port))
-except socket.error as e:
-    print(str(e))
+        display_buffer += '\n'
 
-print('Socket is listening..')
-ServerSideSocket.listen()
-
-
-def obtain_keystrokes(connection):
-    connection.send(int.to_bytes(0xFF, 1, 'little'))
-    res = connection.recv(2048)
-    while not res:
-        res = connection.recv
-    print(res)
-    # while True:
-    #     data = connection.recv(2048)
-    #     response = 'Server message: ' + data.decode('utf-8')
-    #     if not data:
-    #         break
-    #     connection.sendall(str.encode(response))
-    # connection.close()
+    clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
+    clearConsole()
+    print(display_buffer)
 
 
-def start_game(clients):
-    while True:
-        time.sleep(0.2)
-        for client in clients:
-            start_new_thread(obtain_keystrokes, (client, ))
-        # start_new_thread(obtain_keystrokes, (Client,))
+
+def encode_display(display):
+    data = 0
+    for y in range(SCREEN_HEIGHT):
+        for x in range(SCREEN_WIDTH):
+            data |= display[x][y] & 1
+            data <<= 1
+    return int.to_bytes(data, 2048, 'little')
 
 
-def start_server():
-    clients = []
-    while len(clients) < 1:
-        time.sleep(0.1)
-        client, address = ServerSideSocket.accept()
-        print('Connected to: ' + address[0] + ':' + str(address[1]))
-        clients.append(client)
-        client.send(str.encode('Welcome to the game Player {}'.format(len(clients))))
-        print(clients)
 
-    start_game(clients)
-    ServerSideSocket.close()
 
-start_server()
+
+
+class Server:
+
+    def __init__(self):
+        self.ACTIVE_KEYS = []
+
+        self.ServerSideSocket = socket.socket()
+        host = '127.0.0.1'
+        port = 2004
+
+        try:
+            self.ServerSideSocket.bind((host, port))
+        except socket.error as e:
+            print(str(e))
+
+        print('Socket is listening..')
+        self.ServerSideSocket.listen()
+
+    def start_server(self):
+        clients = []
+        while len(clients) < 2:
+            time.sleep(0.1)
+            client, address = self.ServerSideSocket.accept()
+            print('Connected to: ' + address[0] + ':' + str(address[1]))
+            clients.append(client)
+            client.send(str.encode('Welcome to the game Player {}'.format(len(clients))))
+            # print(clients)
+
+        self.start_game(clients)
+        # self.ServerSideSocket.close()
+
+
+    def start_game(self, clients):
+        emu = Chip8()
+        emu.load_rom("pong.ch8")
+        while True:
+            self.ACTIVE_KEYS = []
+            for client in clients:
+                # self.obtain_keystrokes(client)
+                thread = threading.Thread(target=self.obtain_keystrokes(client), group=None)
+                thread.start()  #possibly neεding join or locking for accessing active keys
+            emu.ACTIVE_KEYS = self.ACTIVE_KEYS
+            display_data = encode_display(emu.get_display())
+            if emu.updated_display:
+                for client in clients:
+                    client.send(display_data)
+                print(self.ACTIVE_KEYS)
+
+            emu.set_keys(self.ACTIVE_KEYS)
+            # emu.update_keys()
+            emu.tick()
+
+
+    def obtain_keystrokes(self, connection):
+        connection.send(int.to_bytes(0xFF, 1, 'little'))
+        res = connection.recv(2048)
+        while not res:
+            connection.send(int.to_bytes(0xFF, 1, 'little'))
+            res = connection.recv(2048)
+        keys = res.decode('utf-8')
+        for key in keys:
+            if key not in self.ACTIVE_KEYS:
+                self.ACTIVE_KEYS.append(key)
+                print(key)
+        return
+
+        # while True:
+        #     data = connection.recv(2048)
+        #     response = 'Server message: ' + data.decode('utf-8')
+        #     if not data:
+        #         break
+        #     connection.sendall(str.encode(response))
+        # connection.close()
+
+
+server = Server()
+server.start_server()

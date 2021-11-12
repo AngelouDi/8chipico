@@ -77,6 +77,8 @@ class Chip8:
         self.DISPLAY = []
         self.ACTIVE_KEYS = []
 
+        self.updated_display = 1;
+
         for x_screen in range(SCREEN_WIDTH):
             new_column = []
             for y_screen in range(SCREEN_HEIGHT):
@@ -97,6 +99,9 @@ class Chip8:
         for x in range(SCREEN_WIDTH):
             for y in range(SCREEN_HEIGHT):
                 self.DISPLAY[x][y] = 0
+
+    def set_keys(self, keys):
+        self.ACTIVE_KEYS = keys
 
     def show_display(self):
         display_buffer = ""
@@ -296,6 +301,7 @@ class Chip8:
                     erased = 0x1
                 self.DISPLAY[(self.V_REG[x] + j) % SCREEN_WIDTH][(self.V_REG[y] + i) % SCREEN_HEIGHT] = new_pixel
         self.V_REG[0xF] = erased
+        self.updated_display = 1
         if TERMINAL_GAME:
             self.show_display()
 
@@ -498,6 +504,7 @@ class Chip8:
             input("")
 
     def tick(self):
+        self.updated_display = 0
         if self.TIMER > 0:
             self.TIMER -= 1
         if self.SOUND > 0:
