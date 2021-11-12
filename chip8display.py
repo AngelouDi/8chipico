@@ -1,6 +1,5 @@
 import chippico8
 import pygame
-import os
 
 SCREEN_WIDTH = 64
 SCREEN_HEIGHT = 32

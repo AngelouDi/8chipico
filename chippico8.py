@@ -3,6 +3,7 @@ import keyboard
 import os
 
 VERBOSE = False
+TERMINAL_GAME = True
 
 SCREEN_WIDTH = 64
 SCREEN_HEIGHT = 32
@@ -21,6 +22,12 @@ KEYBOARD_MAP = {
     0xD: 'Z', 0xE: 'X', 0xF: 'C', 0x10: 'V'
 }
 
+KEYS = [
+    '1', '2', '3', '4',
+    'Q', 'W', 'E', 'R',
+    'A', 'S', 'D', 'F',
+    'Z', 'X', 'C', 'V']
+
 NUMBER_SPRITES = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                   0x20, 0x60, 0x20, 0x20, 0x70,  # 1
                   0xF0, 0x10, 0xF0, 0x80, 0xF0,  # 2
@@ -37,6 +44,8 @@ NUMBER_SPRITES = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                   0xE0, 0x90, 0x90, 0x90, 0xE0,  # D
                   0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
                   0xF0, 0x80, 0xF0, 0x80, 0x80]  # F
+
+def update_keys():
 
 
 def check_key(key):
@@ -66,6 +75,7 @@ class Chip8:
         self.SP = 0xEFF
 
         self.DISPLAY = []
+        self.ACTIVE_KEYS = []
 
         for x_screen in range(SCREEN_WIDTH):
             new_column = []
@@ -276,7 +286,8 @@ class Chip8:
                     erased = 0x1
                 self.DISPLAY[(self.V_REG[x] + j) % SCREEN_WIDTH][(self.V_REG[y] + i) % SCREEN_HEIGHT] = new_pixel
         self.V_REG[0xF] = erased
-#        self.show_display()    Remove comment to play from console
+        if TERMINAL_GAME:
+            self.show_display()
 
     # SKP Ex9E
     def SKP(self, x):
@@ -478,7 +489,8 @@ class Chip8:
         self.read_pc()
 
 
-# emu = Chip8()             Remove to play from console
-# emu.load_rom("pong.ch8")
-# while True:
-#     emu.tick()
+if TERMINAL_GAME:
+    emu = Chip8()
+    emu.load_rom("pong.ch8")
+    while True:
+        emu.tick()
