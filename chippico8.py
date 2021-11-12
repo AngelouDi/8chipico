@@ -3,7 +3,7 @@ import keyboard
 import os
 
 VERBOSE = False
-TERMINAL_GAME = True
+TERMINAL_GAME = False
 
 SCREEN_WIDTH = 64
 SCREEN_HEIGHT = 32
@@ -45,11 +45,11 @@ NUMBER_SPRITES = [0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
                   0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
                   0xF0, 0x80, 0xF0, 0x80, 0x80]  # F
 
-def update_keys():
 
 
-def check_key(key):
-    return keyboard.is_pressed(KEYBOARD_MAP[key])
+
+
+
 
 
 def dec_to_bin(x):
@@ -82,6 +82,16 @@ class Chip8:
             for y_screen in range(SCREEN_HEIGHT):
                 new_column.append(0)
             self.DISPLAY.append(new_column)
+
+    def update_keys(self):
+        pressed_keys = []
+        for key in KEYS:
+            if keyboard.is_pressed(key):
+                pressed_keys.append(key)
+        self.ACTIVE_KEYS = pressed_keys
+
+    def check_key(self, key):
+        return KEYBOARD_MAP[key] in self.ACTIVE_KEYS
 
     def display_clear(self):
         for x in range(SCREEN_WIDTH):
@@ -293,14 +303,18 @@ class Chip8:
     def SKP(self, x):
         if VERBOSE:
             print("Wz9E")
-        if check_key(self.V_REG[x]):
+        if TERMINAL_GAME:
+            self.update_keys()
+        if self.check_key(self.V_REG[x]):
             self.PC += 2
 
     # SKNP ExA1
     def SKNP(self, x):
         if VERBOSE:
             print("ExA1")
-        if not check_key(self.V_REG[x]):
+        if TERMINAL_GAME:
+            self.update_keys()
+        if not self.check_key(self.V_REG[x]):
             self.PC += 2
 
     # LD Fx07
@@ -315,7 +329,9 @@ class Chip8:
             print("Fx0A")
         while True:
             for key in AVAILABLE_KEYS:
-                if check_key(key):
+                if TERMINAL_GAME:
+                    self.update_keys()
+                if self.check_key(key):
                     self.V_REG[x] = key
                     return
 
@@ -337,7 +353,7 @@ class Chip8:
         if VERBOSE:
             print("Fx1E")
 
-        self.I_REG = self.I_REG + self.V_REG[x]
+        self.I_REG += self.V_REG[x]
 
     # LD Fx29
     def LDSPRI(self, x):
@@ -482,6 +498,7 @@ class Chip8:
             input("")
 
     def tick(self):
+        self.ACTIVE_KEYS = 0
         if self.TIMER > 0:
             self.TIMER -= 1
         if self.SOUND > 0:
