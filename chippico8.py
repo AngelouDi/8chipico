@@ -498,12 +498,12 @@ class Chip8:
             input("")
 
     def tick(self):
-        self.ACTIVE_KEYS = 0
         if self.TIMER > 0:
             self.TIMER -= 1
         if self.SOUND > 0:
             self.SOUND -= 1
         self.read_pc()
+        self.ACTIVE_KEYS = []
 
 
 if TERMINAL_GAME:
