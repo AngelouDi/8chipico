@@ -60,21 +60,28 @@ class Server:
 
         self.ServerSideSocket = socket.socket()
         self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        host = '192.168.1.3'
-        port = 2004
+        host = 'localhost'
+        self.port = 2004
 
         try:
-            self.ServerSideSocket.bind((host, port))
-            self.udpSocket.bind((host, port+1))
+            self.ServerSideSocket.bind((host, self.port))
+            # self.udpSocket.bind((host, port+1))
         except socket.error as e:
             print(str(e))
 
         print('Socket is listening..')
-        self.ServerSideSocket.listen()
+        self.ServerSideSocket.listen(5)
+
+    def udp_send(self, data, client_obj):
+        self.udpSocket.sendto(data, (client_obj["address"][0], self.port+1))
+
+    def tcp_send(self, data, client_obj):
+        client_obj["client"].send(data)
+
 
     def start_server(self):
         clients = []
-        while len(clients) < 1:
+        while len(clients) < 2:
             time.sleep(0.1)
             client, address = self.ServerSideSocket.accept()
             print('Connected to: ' + address[0] + ':' + str(address[1]))
@@ -100,18 +107,19 @@ class Server:
             display_data = encode_display(emu.get_display())
             if emu.updated_display:
                 for client_obj in clients:
-                    threading.Thread(target=client_obj["client"].send(display_data), group=None)
+                    thread = threading.Thread(target=self.udp_send(display_data, client_obj), group=None)
+                    thread.start()
 
                 print(self.ACTIVE_KEYS)
 
             emu.set_keys(self.ACTIVE_KEYS)
-            # emu.update_keys()
             emu.tick()
 
 
     def obtain_keystrokes(self, client_obj):
         print("{} {}".format(client_obj["address"][0], client_obj["address"][1]))
-        self.udpSocket.sendto(int.to_bytes(0xFF, 1, 'little'), (client_obj["address"][0], (client_obj["address"][1])))
+        self.udp_send(int.to_bytes(0xFF, 1, 'little'), client_obj)
+        # self.udpSocket.sendto(int.to_bytes(0xFF, 1, 'little'), (client_obj["address"][0], (client_obj["address"][1])))
         # client_obj.send(int.to_bytes(0xFF, 1, 'little')
         res = client_obj["client"].recv(2048)
         while not res:

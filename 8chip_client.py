@@ -64,13 +64,14 @@ class Client:
     def initialize_connection(self):
         self.ClientMultiSocket = socket.socket()
         self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        host = '62.1.88.235'
+        host = 'localhost'
         port = 2004
 
         print('Waiting for connection response')
 
         try:
             self.ClientMultiSocket.connect((host, port))
+            self.udpSocket.bind((host, port+1))
         except socket.error as e:
             print(str(e))
 
@@ -84,6 +85,11 @@ class Client:
                 new_column.append(0)
             self.DISPLAY.append(new_column)
 
+
+    def receive_udp(self):
+        res = self.udpSocket.recv(2048)
+        return res
+
     def game_loop(self):
 
 
@@ -96,13 +102,13 @@ class Client:
         done = False
 
         while not done:
-            res = self.udpSocket.recv(2048)
+            res = self.receive_udp()
             if res:
                 res = int.from_bytes(res, 'little')
                 if res == 0xFF:
                     self.ClientMultiSocket.send(check_keys())
                 else:
-                    clock.tick(480)
+                    clock.tick(1024)
                     for event in pygame.event.get():  # User did something
                         if event.type == pygame.QUIT:  # If user clicked close
                             done = True  # Flag that we are done so we exit this loop
