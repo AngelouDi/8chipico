@@ -59,11 +59,13 @@ class Server:
         self.ACTIVE_KEYS = []
 
         self.ServerSideSocket = socket.socket()
+        self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         host = '192.168.1.3'
         port = 2004
 
         try:
             self.ServerSideSocket.bind((host, port))
+            self.udpSocket.bind((host, port+1))
         except socket.error as e:
             print(str(e))
 
@@ -72,11 +74,12 @@ class Server:
 
     def start_server(self):
         clients = []
-        while len(clients) < 2:
+        while len(clients) < 1:
             time.sleep(0.1)
             client, address = self.ServerSideSocket.accept()
             print('Connected to: ' + address[0] + ':' + str(address[1]))
-            clients.append(client)
+            clients.append({"client": client, "address": address})
+            # clients.append(client)
             client.send(str.encode('Welcome to the game Player {}'.format(len(clients))))
             # print(clients)
 
@@ -89,15 +92,15 @@ class Server:
         emu.load_rom("pong2.ch8")
         while True:
             self.ACTIVE_KEYS = []
-            for client in clients:
+            for client_obj in clients:
                 # self.obtain_keystrokes(client)
-                thread = threading.Thread(target=self.obtain_keystrokes(client), group=None)
+                thread = threading.Thread(target=self.obtain_keystrokes(client_obj), group=None)
                 thread.start()  #possibly neεding join or locking for accessing active keys
             emu.ACTIVE_KEYS = self.ACTIVE_KEYS
             display_data = encode_display(emu.get_display())
             if emu.updated_display:
-                for client in clients:
-                    threading.Thread(target=client.sendto(display_data), group=None)
+                for client_obj in clients:
+                    threading.Thread(target=client_obj["client"].send(display_data), group=None)
 
                 print(self.ACTIVE_KEYS)
 
@@ -106,12 +109,14 @@ class Server:
             emu.tick()
 
 
-    def obtain_keystrokes(self, connection):
-        connection.send(int.to_bytes(0xFF, 1, 'little'))
-        res = connection.recv(2048)
+    def obtain_keystrokes(self, client_obj):
+        print("{} {}".format(client_obj["address"][0], client_obj["address"][1]))
+        self.udpSocket.sendto(int.to_bytes(0xFF, 1, 'little'), (client_obj["address"][0], (client_obj["address"][1])))
+        # client_obj.send(int.to_bytes(0xFF, 1, 'little')
+        res = client_obj["client"].recv(2048)
         while not res:
-            connection.send(int.to_bytes(0xFF, 1, 'little'))
-            res = connection.recv(2048)
+            client_obj["client"].send(int.to_bytes(0xFF, 1, 'little'))
+            res = client_obj["client"].recv(2048)
         keys = res.decode('utf-8')
         for key in keys:
             if key not in self.ACTIVE_KEYS:

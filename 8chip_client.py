@@ -55,6 +55,7 @@ class Client:
 
     def __init__(self):
         self.ClientMultiSocket = None
+        self.udpSocket = None
         self.DISPLAY = []
         self.res = None
         self.initialize_connection()
@@ -62,6 +63,7 @@ class Client:
 
     def initialize_connection(self):
         self.ClientMultiSocket = socket.socket()
+        self.udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         host = '62.1.88.235'
         port = 2004
 
@@ -94,7 +96,7 @@ class Client:
         done = False
 
         while not done:
-            res = self.ClientMultiSocket.recv(2048)
+            res = self.udpSocket.recv(2048)
             if res:
                 res = int.from_bytes(res, 'little')
                 if res == 0xFF:
