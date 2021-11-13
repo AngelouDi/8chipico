@@ -59,7 +59,7 @@ class Server:
         self.ACTIVE_KEYS = []
 
         self.ServerSideSocket = socket.socket()
-        host = '127.0.0.1'
+        host = '192.168.1.3'
         port = 2004
 
         try:
@@ -86,7 +86,7 @@ class Server:
 
     def start_game(self, clients):
         emu = Chip8()
-        emu.load_rom("pong.ch8")
+        emu.load_rom("pong2.ch8")
         while True:
             self.ACTIVE_KEYS = []
             for client in clients:
@@ -97,7 +97,8 @@ class Server:
             display_data = encode_display(emu.get_display())
             if emu.updated_display:
                 for client in clients:
-                    client.send(display_data)
+                    threading.Thread(target=client.sendto(display_data), group=None)
+
                 print(self.ACTIVE_KEYS)
 
             emu.set_keys(self.ACTIVE_KEYS)

@@ -62,7 +62,7 @@ class Client:
 
     def initialize_connection(self):
         self.ClientMultiSocket = socket.socket()
-        host = '127.0.0.1'
+        host = '62.1.88.235'
         port = 2004
 
         print('Waiting for connection response')
